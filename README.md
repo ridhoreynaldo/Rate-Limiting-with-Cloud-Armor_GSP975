@@ -10,7 +10,7 @@ curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Clou
 curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-2-mig-health.sh
 curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-3-backend-urlmap.sh
 curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-4-proxy-forwarding-vm.sh
-
+chmod +x setup-*.sh
 ./setup-1-env-and-templates.sh
 
 -----Terminal 2:
