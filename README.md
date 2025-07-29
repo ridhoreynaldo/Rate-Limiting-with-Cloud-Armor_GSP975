@@ -7,8 +7,9 @@
 ./setup-1-env-and-templates.sh
 
 -----Terminal 2:
-
 source .env && bash setup-2-mig-health.sh
+
+source .env && ./setup-2-mig-health.sh
 
 -----Terminal 3:
 
