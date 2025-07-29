@@ -4,6 +4,13 @@
 
 -----Terminal 1:
 
+# Unduh semua file skrip setup
+
+curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-1-env-and-templates.sh
+curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-2-mig-health.sh
+curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-3-backend-urlmap.sh
+curl -LO https://raw.githubusercontent.com/ridhoreynaldo/Rate-Limiting-with-Cloud-Armor_GSP975/main/setup-4-proxy-forwarding-vm.sh
+
 ./setup-1-env-and-templates.sh
 
 -----Terminal 2:
