@@ -1,52 +1,25 @@
 #!/bin/bash
 source .env
-token=$(gcloud auth application-default print-access-token)
 
-# Security Policy
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{
-    "name": "default-security-policy-for-backend-service-http-backend",
-    "rules": [
-      {
-        "action": "allow",
-        "priority": 2147483647,
-        "match": { "config": { "srcIpRanges": ["*"] }, "versionedExpr": "SRC_IPS_V1" }
-      },
-      {
-        "action": "throttle",
-        "priority": 2147483646,
-        "description": "Default rate limiting rule",
-        "match": { "config": { "srcIpRanges": ["*"] }, "versionedExpr": "SRC_IPS_V1" },
-        "rateLimitOptions": {
-          "conformAction": "allow",
-          "exceedAction": "deny(403)",
-          "enforceOnKey": "IP",
-          "rateLimitThreshold": { "count": 500, "intervalSec": 60 }
-        }
-      }
-    ]
-  }' \
-  "https://compute.googleapis.com/compute/v1/projects/$PROJECT_ID/global/securityPolicies"
+echo "🕒 Menunggu backend service dan health check tersedia..."
+until gcloud compute backend-services describe http-backend --global &>/dev/null; do
+  echo "⏳ Menunggu http-backend..."
+  sleep 5
+done
 
-sleep 20
+until gcloud compute health-checks describe http-health-check &>/dev/null; do
+  echo "⏳ Menunggu http-health-check..."
+  sleep 5
+done
 
-# Backend Service
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{
-    "name": "http-backend",
-    "protocol": "HTTP",
-    "portName": "http",
-    "loadBalancingScheme": "EXTERNAL_MANAGED",
-    "securityPolicy": "projects/'"$PROJECT_ID"'/global/securityPolicies/default-security-policy-for-backend-service-http-backend",
-    "healthChecks": ["projects/'"$PROJECT_ID"'/global/healthChecks/http-health-check"],
-    "backends": [
-      { "group": "projects/'"$PROJECT_ID"'/regions/'"$REGION1"'/instanceGroups/'"$REGION1"'-mig" },
-      { "group": "projects/'"$PROJECT_ID"'/regions/'"$REGION2"'/instanceGroups/'"$REGION2"'-mig" }
-    ]
-  }' \
-  "https://compute.googleapis.com/compute/beta/projects/$PROJECT_ID/global/backendServices"
+echo "🌐 Membuat URL map dan target proxy..."
+gcloud compute url-maps create http-lb \
+  --default-service=http-backend
 
-# URL Map
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{"defaultService": "projects/'"$PROJECT_ID"'/global/backendServices/http-backend","name":"http-lb"}' \
-  "https://compute.googleapis.com/compute/v1/projects/$PROJECT_ID/global/urlMaps"
+gcloud compute target-http-proxies create http-lb-target-proxy \
+  --url-map=http-lb
+
+gcloud compute forwarding-rules create http-content-rule \
+  --global \
+  --target-http-proxy=http-lb-target-proxy \
+  --ports=80
