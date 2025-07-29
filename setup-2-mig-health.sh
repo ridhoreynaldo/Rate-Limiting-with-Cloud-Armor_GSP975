@@ -1,29 +1,33 @@
 #!/bin/bash
 source .env
 
-# MIG
-gcloud beta compute instance-groups managed create $REGION1-mig \
-  --project=$PROJECT_ID \
+echo "🛠 Membuat Instance Template dan Managed Instance Group..."
+
+gcloud compute instance-templates create web-template \
   --region=$REGION1 \
-  --template=projects/$PROJECT_ID/global/instanceTemplates/$REGION1-template \
-  --size=1 && \
-gcloud beta compute instance-groups managed set-autoscaling $REGION1-mig \
-  --region=$REGION1 --mode=on --min-num-replicas=1 --max-num-replicas=5 --target-cpu-utilization=0.8
+  --network=default \
+  --tags=http-server \
+  --metadata=startup-script='#!/bin/bash
+    sudo apt-get update
+    sudo apt-get install -y apache2
+    sudo systemctl start apache2
+    echo "Server: $(hostname)" | sudo tee /var/www/html/index.html'
 
-gcloud beta compute instance-groups managed create $REGION2-mig \
-  --project=$PROJECT_ID \
-  --region=$REGION2 \
-  --template=projects/$PROJECT_ID/global/instanceTemplates/$REGION2-template \
-  --size=1 && \
-gcloud beta compute instance-groups managed set-autoscaling $REGION2-mig \
-  --region=$REGION2 --mode=on --min-num-replicas=1 --max-num-replicas=5 --target-cpu-utilization=0.8
+gcloud compute instance-groups managed create web-mig \
+  --base-instance-name web \
+  --template=web-template \
+  --size=2 \
+  --region=$REGION1
 
-# Health Check
-token=$(gcloud auth application-default print-access-token)
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{
-    "name": "http-health-check",
-    "type": "TCP",
-    "tcpHealthCheck": { "port": 80 }
-  }' \
-  "https://compute.googleapis.com/compute/beta/projects/$PROJECT_ID/global/healthChecks"
+echo "🩺 Membuat health check dan backend service..."
+gcloud compute health-checks create http http-health-check
+
+gcloud compute backend-services create http-backend \
+  --protocol=HTTP \
+  --health-checks=http-health-check \
+  --global
+
+gcloud compute backend-services add-backend http-backend \
+  --instance-group=web-mig \
+  --instance-group-region=$REGION1 \
+  --global
