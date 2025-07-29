@@ -1,13 +1,27 @@
 # Rate-Limiting-with-Cloud-Armor_GSP975
 
-----jalankan dulu
+🔁 Jalankan di beberapa terminal:
+Terminal 1:
 
-bash main.sh
+bash
+Copy
+Edit
+bash setup-1-env-and-templates.sh
+Terminal 2:
 
-----baru jalankan dibawah ini dengan terminal 1,2,3
+bash
+Copy
+Edit
+source .env && bash setup-2-mig-health.sh
+Terminal 3:
 
-source .env && bash terminal-2.sh
+bash
+Copy
+Edit
+source .env && bash setup-3-backend-urlmap.sh
+Terminal 4:
 
-source .env && bash terminal-3.sh
-
-source .env && bash terminal-4.sh
+bash
+Copy
+Edit
+source .env && bash setup-4-proxy-forwarding-vm.sh
