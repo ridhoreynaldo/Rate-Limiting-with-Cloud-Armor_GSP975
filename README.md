@@ -2,18 +2,18 @@
 
 🔁 Jalankan di beberapa terminal:
 
-Terminal 1:
+-----Terminal 1:
 
-bash setup-1-env-and-templates.sh
+./setup-1-env-and-templates.sh
 
-Terminal 2:
+-----Terminal 2:
 
 source .env && bash setup-2-mig-health.sh
 
-Terminal 3:
+-----Terminal 3:
 
 source .env && bash setup-3-backend-urlmap.sh
 
-Terminal 4:
+-----Terminal 4:
 
 source .env && bash setup-4-proxy-forwarding-vm.sh
