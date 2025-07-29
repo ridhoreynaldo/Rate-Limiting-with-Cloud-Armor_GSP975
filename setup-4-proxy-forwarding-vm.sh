@@ -1,32 +1,21 @@
 #!/bin/bash
 source .env
-token=$(gcloud auth application-default print-access-token)
 
-# Target Proxies
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{"name":"http-lb-target-proxy","urlMap":"projects/'"$PROJECT_ID"'/global/urlMaps/http-lb"}' \
-  "https://compute.googleapis.com/compute/v1/projects/$PROJECT_ID/global/targetHttpProxies"
+echo "🕒 Menunggu URL map dan proxy tersedia..."
+until gcloud compute url-maps describe http-lb --global &>/dev/null; do
+  echo "⏳ Menunggu urlMap http-lb..."
+  sleep 5
+done
 
-# Forwarding Rule IPv4
-curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-  -d '{
-    "name": "http-lb-forwarding-rule",
-    "IPProtocol": "TCP",
-    "portRange": "80",
-    "target": "projects/'"$PROJECT_ID"'/global/targetHttpProxies/http-lb-target-proxy",
-    "loadBalancingScheme": "EXTERNAL_MANAGED",
-    "networkTier": "PREMIUM"
-  }' \
-  "https://compute.googleapis.com/compute/beta/projects/$PROJECT_ID/global/forwardingRules"
+until gcloud compute target-http-proxies describe http-lb-target-proxy --global &>/dev/null; do
+  echo "⏳ Menunggu target proxy..."
+  sleep 5
+done
 
-# Siege VM
+echo "🚀 Membuat VM penguji (siege)..."
 gcloud compute instances create siege-vm \
-  --project=$PROJECT_ID --zone=$ZONE3 \
-  --machine-type=e2-medium \
-  --network-interface=network-tier=PREMIUM,subnet=default \
-  --metadata=enable-osconfig=TRUE,enable-oslogin=true \
-  --create-disk=auto-delete=yes,boot=yes,image=projects/debian-cloud/global/images/debian-12-bookworm-v20250311,size=10,type=pd-balanced
-
-# Install siege
-gcloud compute ssh --zone "$ZONE3" "siege-vm" --project "$PROJECT_ID" \
-  --command "sudo apt-get -y install siege" --quiet
+  --zone=$ZONE2 \
+  --tags=http-server \
+  --metadata=startup-script='#!/bin/bash
+    sudo apt-get update
+    sudo apt-get install -y siege'
